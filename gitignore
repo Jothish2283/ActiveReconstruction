@@ -1,0 +1,46 @@
+# Unity generated
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+sysinfo.txt
+*.pidb
+*.pdb
+*.mdb
+*.unitypackage
+
+# Visual Studio
+.vs/
+*.csproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+mlagent_env/
+.venv/
+venv/
+*.egg-info/
+
+# ML-Agents training outputs (keep results/ for model checkpoints)
+results/*/CameraAgent/*.onnx.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Large files — add actual OBJ/FBX to Git LFS instead
+# *.obj
+# *.fbx

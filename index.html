@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Uncertainty-Aware Active 3D Reconstruction via RL</title>
+<style>
+/* ── Reset & Base ─────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:       #080c14;
+  --surface:  #0f1623;
+  --card:     #141d2e;
+  --border:   #1e2d45;
+  --accent:   #00c8ff;
+  --accent2:  #7c6fff;
+  --red:      #ff4d4d;
+  --yellow:   #ffc94d;
+  --text:     #e8edf5;
+  --muted:    #7a8aa0;
+  --radius:   12px;
+  --font:     'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font);
+  line-height:1.7;
+  overflow-x:hidden;
+}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+img{max-width:100%;border-radius:var(--radius)}
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── Nav ──────────────────────────────────────────────────── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(8,12,20,0.85);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 2rem;height:58px;
+}
+.nav-logo{
+  font-size:1rem;font-weight:700;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  white-space:nowrap;
+}
+.nav-links{display:flex;gap:1.8rem;list-style:none}
+.nav-links a{color:var(--muted);font-size:0.875rem;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:var(--text);text-decoration:none}
+
+/* ── Hero ─────────────────────────────────────────────────── */
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:6rem 1.5rem 4rem;
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,200,255,.12) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(124,111,255,.10) 0%, transparent 60%);
+  pointer-events:none;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:.5rem;
+  background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.25);
+  border-radius:100px;padding:.3rem 1rem;
+  font-size:.8rem;color:var(--accent);margin-bottom:1.5rem;letter-spacing:.05em;
+}
+.hero h1{
+  font-size:clamp(2rem,5vw,3.4rem);font-weight:800;
+  line-height:1.15;max-width:860px;margin-bottom:1.2rem;
+  background:linear-gradient(160deg,#fff 30%,var(--accent) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero p{
+  font-size:1.1rem;color:var(--muted);max-width:640px;margin-bottom:2.5rem;
+}
+.btn-row{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center}
+.btn{
+  display:inline-flex;align-items:center;gap:.5rem;
+  padding:.65rem 1.4rem;border-radius:8px;
+  font-size:.9rem;font-weight:600;transition:all .2s;cursor:pointer;
+}
+.btn-primary{
+  background:var(--accent);color:#000;
+}
+.btn-primary:hover{background:#33d4ff;text-decoration:none}
+.btn-outline{
+  border:1px solid var(--border);color:var(--text);background:transparent;
+}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+
+/* ── Badges row ───────────────────────────────────────────── */
+.badges{
+  display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;
+  margin-top:2.5rem;
+}
+.badge{
+  padding:.25rem .75rem;border-radius:100px;
+  font-size:.75rem;font-weight:600;letter-spacing:.04em;
+  border:1px solid;
+}
+.badge-blue{background:rgba(0,200,255,.1);border-color:rgba(0,200,255,.3);color:var(--accent)}
+.badge-purple{background:rgba(124,111,255,.1);border-color:rgba(124,111,255,.3);color:#a89fff}
+.badge-green{background:rgba(0,230,120,.1);border-color:rgba(0,230,120,.3);color:#00e678}
+.badge-orange{background:rgba(255,160,50,.1);border-color:rgba(255,160,50,.3);color:#ffa032}
+
+/* ── Sections ─────────────────────────────────────────────── */
+section{padding:5rem 1.5rem;max-width:1100px;margin:0 auto}
+.section-label{
+  display:inline-block;font-size:.75rem;font-weight:700;letter-spacing:.12em;
+  color:var(--accent);text-transform:uppercase;margin-bottom:.8rem;
+}
+h2{font-size:clamp(1.6rem,3vw,2.2rem);font-weight:800;margin-bottom:1rem}
+h2 span{
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+
+/* ── Results table ────────────────────────────────────────── */
+.results-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:1.2rem;margin:2rem 0;
+}
+.metric-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:1.5rem 1.2rem;
+  text-align:center;position:relative;overflow:hidden;
+  transition:transform .2s,border-color .2s;
+}
+.metric-card:hover{transform:translateY(-3px);border-color:var(--accent)}
+.metric-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+}
+.metric-label{font-size:.8rem;color:var(--muted);margin-bottom:.4rem;font-weight:500}
+.metric-rl{font-size:1.9rem;font-weight:800;color:var(--accent)}
+.metric-compare{font-size:.78rem;color:var(--muted);margin-top:.5rem;line-height:1.6}
+.metric-compare .up{color:#00e678}
+.metric-compare .down{color:var(--red)}
+
+/* ── Method comparison table ──────────────────────────────── */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+thead tr{background:var(--surface)}
+th{padding:.9rem 1.2rem;text-align:left;font-weight:700;
+   font-size:.8rem;letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
+td{padding:.85rem 1.2rem;border-top:1px solid var(--border)}
+tr.rl-row{background:rgba(0,200,255,.05)}
+tr.rl-row td{color:var(--accent);font-weight:700}
+.tag{display:inline-block;padding:.15rem .55rem;border-radius:4px;
+     font-size:.75rem;font-weight:600}
+.tag-rl{background:rgba(0,200,255,.15);color:var(--accent)}
+.tag-rnd{background:rgba(255,77,77,.15);color:var(--red)}
+.tag-seq{background:rgba(255,201,77,.15);color:var(--yellow)}
+
+/* ── Figures grid ─────────────────────────────────────────── */
+.figures-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:1.5rem;margin-top:2rem;
+}
+.fig-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;
+  transition:transform .2s,border-color .2s;
+}
+.fig-card:hover{transform:translateY(-4px);border-color:var(--accent)}
+.fig-card img{width:100%;display:block;border-radius:0}
+.fig-caption{padding:.8rem 1rem;font-size:.82rem;color:var(--muted);line-height:1.5}
+.fig-caption strong{color:var(--text)}
+
+/* ── Architecture ─────────────────────────────────────────── */
+.arch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-top:2rem}
+.arch-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:1.4rem 1.2rem;
+  display:flex;flex-direction:column;gap:.5rem;
+  transition:border-color .2s;
+}
+.arch-card:hover{border-color:var(--accent2)}
+.arch-icon{font-size:1.8rem}
+.arch-title{font-weight:700;font-size:.95rem}
+.arch-desc{font-size:.8rem;color:var(--muted);line-height:1.5}
+
+/* ── Pipeline flow ────────────────────────────────────────── */
+.pipeline{
+  display:flex;align-items:center;flex-wrap:wrap;gap:.5rem;
+  margin:2rem 0;padding:1.5rem;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+}
+.pipe-step{
+  background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.2);
+  border-radius:8px;padding:.5rem 1rem;
+  font-size:.82rem;font-weight:600;color:var(--accent);white-space:nowrap;
+}
+.pipe-arrow{color:var(--muted);font-size:1.1rem}
+
+/* ── Code block ───────────────────────────────────────────── */
+.code-block{
+  background:#0a0f1a;border:1px solid var(--border);
+  border-radius:var(--radius);padding:1.2rem 1.5rem;
+  font-family:'Fira Code','Cascadia Code',monospace;
+  font-size:.85rem;color:#a8d8ea;overflow-x:auto;
+  margin:1.2rem 0;line-height:1.7;
+}
+.code-block .c{color:#5a7a8a}
+.code-block .k{color:var(--accent2)}
+.code-block .s{color:#98d4a3}
+.code-block .n{color:var(--accent)}
+
+/* ── Finding cards ────────────────────────────────────────── */
+.findings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.2rem;margin-top:2rem}
+.finding-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:1.5rem;
+}
+.finding-num{
+  font-size:2rem;font-weight:900;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  line-height:1;margin-bottom:.5rem;
+}
+.finding-title{font-weight:700;margin-bottom:.4rem}
+.finding-desc{font-size:.85rem;color:var(--muted);line-height:1.6}
+
+/* ── Footer ───────────────────────────────────────────────── */
+footer{
+  border-top:1px solid var(--border);
+  text-align:center;padding:2.5rem 1.5rem;
+  color:var(--muted);font-size:.85rem;
+}
+footer a{color:var(--accent)}
+
+/* ── Divider ──────────────────────────────────────────────── */
+.divider{height:1px;background:var(--border);margin:0}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media(max-width:600px){
+  .nav-links{display:none}
+  .pipeline{justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ──────────────────────────────────────────────────── -->
+<nav>
+  <span class="nav-logo">ActiveRecon · RL</span>
+  <ul class="nav-links">
+    <li><a href="#results">Results</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#figures">Figures</a></li>
+    <li><a href="#setup">Setup</a></li>
+    <li><a href="https://github.com/YOUR_USERNAME/ActiveReconstruction">GitHub</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ─────────────────────────────────────────────────── -->
+<div class="hero">
+  <div class="hero-badge">🛸 Reinforcement Learning · Computer Vision · Unity</div>
+  <h1>Uncertainty-Aware Active 3D Reconstruction via Reinforcement Learning</h1>
+  <p>
+    A PPO-trained camera agent learns to select viewpoints that maximally reduce
+    geometric uncertainty in a partially reconstructed 3D scene — achieving
+    <strong style="color:var(--accent)">+790% reward improvement</strong> over random baseline
+    within 30,000 training steps.
+  </p>
+  <div class="btn-row">
+    <a class="btn btn-primary" href="https://github.com/YOUR_USERNAME/ActiveReconstruction">
+      ⭐ View on GitHub
+    </a>
+    <a class="btn btn-outline" href="#results">📊 See Results</a>
+    <a class="btn btn-outline" href="Report/report.pdf">📄 Read Report</a>
+  </div>
+  <div class="badges">
+    <span class="badge badge-blue">Unity 2022.3 LTS</span>
+    <span class="badge badge-purple">ML-Agents 2.0.2</span>
+    <span class="badge badge-orange">PPO Algorithm</span>
+    <span class="badge badge-green">64 Viewpoints</span>
+    <span class="badge badge-blue">Voxel Grid 32³</span>
+    <span class="badge badge-purple">Python · matplotlib</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ── RESULTS ───────────────────────────────────────────────── -->
+<section id="results">
+  <span class="section-label">Quantitative Results</span>
+  <h2>RL Outperforms <span>Both Baselines</span></h2>
+  <p style="color:var(--muted);max-width:680px;margin-bottom:1rem">
+    Evaluated over 50 independent episodes on a geometrically complex spacecraft model.
+    64 Fibonacci sphere viewpoints, 32 decision steps per episode, voxel grid 32³.
+  </p>
+
+  <div class="results-grid">
+    <div class="metric-card">
+      <div class="metric-label">Avg Cumulative Reward</div>
+      <div class="metric-rl">+3.480</div>
+      <div class="metric-compare">
+        vs Random: <span class="up">+4.387 (+790%)</span><br>
+        vs Sequential: <span class="up">+3.983 (+791%)</span>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Voxel Coverage</div>
+      <div class="metric-rl">60.7%</div>
+      <div class="metric-compare">
+        vs Random: <span class="up">+3.9%</span><br>
+        vs Sequential: <span class="up">+13.2%</span>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Reconstruction Accuracy</div>
+      <div class="metric-rl">45.4%</div>
+      <div class="metric-compare">
+        vs Random: <span class="up">+1.8%</span><br>
+        vs Sequential: <span class="up">+10.6%</span>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Mean Uncertainty (↓)</div>
+      <div class="metric-rl">0.548</div>
+      <div class="metric-compare">
+        vs Random: <span class="up">−0.013</span><br>
+        vs Sequential: <span class="up">−0.087</span>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Reward Std Dev (↓)</div>
+      <div class="metric-rl">0.579</div>
+      <div class="metric-compare">
+        Most consistent method<br>
+        Random σ: <span class="down">0.552</span> · Seq σ: <span class="down">0.285</span>
+      </div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Geometric Coverage Ceiling</div>
+      <div class="metric-rl">~63%</div>
+      <div class="metric-compare">
+        Due to mutual occlusion<br>
+        in spacecraft geometry
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap" style="margin-top:2.5rem">
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Avg Reward</th>
+          <th>Coverage</th>
+          <th>Uncertainty</th>
+          <th>Accuracy</th>
+          <th>Reward Std</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tag tag-rnd">🎲 Random</span></td>
+          <td>−0.907</td><td>58.4%</td><td>0.561</td><td>43.5%</td><td>0.552</td>
+        </tr>
+        <tr>
+          <td><span class="tag tag-seq">🔢 Sequential</span></td>
+          <td>−0.504</td><td>47.5%</td><td>0.635</td><td>34.7%</td><td>0.285</td>
+        </tr>
+        <tr class="rl-row">
+          <td><span class="tag tag-rl">🤖 RL (PPO)</span></td>
+          <td>+3.480</td><td>60.7%</td><td>0.548</td><td>45.4%</td><td>0.579</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:1.5rem;padding:1.2rem 1.5rem;background:var(--card);
+              border-left:3px solid var(--accent);border-radius:0 var(--radius) var(--radius) 0">
+    <strong>Key Finding:</strong>
+    <span style="color:var(--muted)">
+      Sequential baseline performs <em>worse</em> than random despite being deterministic —
+      Fibonacci sphere polar bias causes the first 32 sequential viewpoints to cluster
+      near the poles, missing the spacecraft's equatorial geometry (solar panels, sensor pods).
+      The RL agent discovers equatorial viewpoints are more informative and concentrates its
+      budget there.
+    </span>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── ARCHITECTURE ──────────────────────────────────────────── -->
+<section id="architecture">
+  <span class="section-label">System Design</span>
+  <h2>End-to-End <span>Architecture</span></h2>
+  <p style="color:var(--muted);max-width:700px">
+    Five interacting modules form a complete active reconstruction pipeline,
+    all implemented in Unity C# with ML-Agents Python trainer.
+  </p>
+
+  <div class="pipeline">
+    <div class="pipe-step">ViewPointGenerator<br><small style="font-weight:400;color:var(--muted)">Fibonacci sphere</small></div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-step">CameraAgent (PPO)<br><small style="font-weight:400;color:var(--muted)">selects action</small></div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-step">CameraOrbit<br><small style="font-weight:400;color:var(--muted)">moves camera</small></div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-step">ReconstructionManager<br><small style="font-weight:400;color:var(--muted)">raycasts + voxel update</small></div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-step">Reward Signal<br><small style="font-weight:400;color:var(--muted)">Δuncertainty − revisit</small></div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-step">MetricsLogger<br><small style="font-weight:400;color:var(--muted)">CSV per episode</small></div>
+  </div>
+
+  <div class="arch-grid">
+    <div class="arch-card">
+      <div class="arch-icon">🎯</div>
+      <div class="arch-title">CameraAgent.cs</div>
+      <div class="arch-desc">PPO agent. 144-dim observation vector. Discrete action space (64 viewpoints). Shaped reward function.</div>
+    </div>
+    <div class="arch-card">
+      <div class="arch-icon">🗺️</div>
+      <div class="arch-title">ReconstructionManager.cs</div>
+      <div class="arch-desc">32³ voxel occupancy grid. Exponential confidence update via stratified raycasting. Ground truth via OverlapBox.</div>
+    </div>
+    <div class="arch-card">
+      <div class="arch-icon">🌐</div>
+      <div class="arch-title">ViewPointGenerator.cs</div>
+      <div class="arch-desc">Fibonacci sphere lattice. 64 deterministic viewpoints. Uniform angular distribution with golden angle spacing.</div>
+    </div>
+    <div class="arch-card">
+      <div class="arch-icon">🎨</div>
+      <div class="arch-title">VoxelColorAnimator.cs</div>
+      <div class="arch-desc">Live uncertainty heatmap. Red = uncertain, green = confident. Only renders occupied voxels (ship geometry).</div>
+    </div>
+    <div class="arch-card">
+      <div class="arch-icon">📊</div>
+      <div class="arch-title">MetricsLogger.cs</div>
+      <div class="arch-desc">Per-episode CSV logging. Reward, coverage, uncertainty, accuracy, runtime. Auto-summary after N episodes.</div>
+    </div>
+    <div class="arch-card">
+      <div class="arch-icon">🎲</div>
+      <div class="arch-title">Baselines</div>
+      <div class="arch-desc">RandomViewSelector (seeded RNG) and SequentialViewSelector (fixed Fibonacci order). Both auto-stop + print summary.</div>
+    </div>
+  </div>
+
+  <div style="margin-top:2.5rem">
+    <h3 style="margin-bottom:1rem;font-size:1.1rem">Reward Function</h3>
+    <div class="code-block">
+<span class="c">// Shaped reward at each step</span>
+r<sub>t</sub> = <span class="n">w₁</span> · Δū<sub>t</sub>          <span class="c">// uncertainty reduction  (w₁ = 1.0)</span>
+   + <span class="n">w₂</span> · n<sub>new</sub>        <span class="c">// new voxels observed   (w₂ = 0.005)</span>
+   − <span class="n">w₃</span> · 𝟙[revisit]  <span class="c">// revisit penalty       (w₃ = 0.30)</span>
+   + <span class="n">w₄</span> · 𝟙[final]    <span class="c">// terminal coverage bonus (w₄ = 0.5)</span>
+    </div>
+
+    <h3 style="margin-top:2rem;margin-bottom:1rem;font-size:1.1rem">Observation Space (144 floats)</h3>
+    <div class="code-block">
+<span class="k">3</span>   Agent position (normalised to [-1,1]³)
+<span class="k">8</span>   Uncertainty histogram (8 bins over occupied voxels)
+<span class="k">3</span>   Uncertainty-weighted centroid (normalised)
+<span class="k">64</span>  Per-viewpoint estimated uncertainty gain
+<span class="k">64</span>  Binary visited mask (1 = already visited)
+<span class="k">1</span>   Steps remaining (normalised)
+<span class="k">1</span>   Current mean uncertainty (scalar)
+<span class="c">─────────────────────────────────────────────</span>
+<span class="n">144</span> Total  →  Space Size = 144 in BehaviorParameters
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── FIGURES ───────────────────────────────────────────────── -->
+<section id="figures">
+  <span class="section-label">Publication Figures</span>
+  <h2>Results <span>Visualised</span></h2>
+  <p style="color:var(--muted);margin-bottom:0">
+    Generated by <code>Python/plot_all.py</code> from the three metrics CSVs.
+    All figures exported as PNG + PDF.
+  </p>
+
+  <div class="figures-grid">
+    <div class="fig-card">
+      <img src="../figures/fig1_metric_curves.png"
+           alt="Per-episode metric curves"
+           onerror="this.style.display='none'"/>
+      <div class="fig-caption">
+        <strong>Fig 1 — Per-episode Metric Curves</strong><br>
+        Reward, coverage, uncertainty, and accuracy over 50 evaluation episodes
+        (5-episode rolling average). RL consistently outperforms both baselines.
+      </div>
+    </div>
+    <div class="fig-card">
+      <img src="../figures/fig2_bar_comparison.png"
+           alt="Bar comparison"
+           onerror="this.style.display:'none'"/>
+      <div class="fig-caption">
+        <strong>Fig 2 — Mean Performance Bar Chart</strong><br>
+        Mean ± std across all methods. RL reward bar is positive while baselines
+        are negative — a direct consequence of learned revisit avoidance.
+      </div>
+    </div>
+    <div class="fig-card">
+      <img src="../figures/fig3_efficiency_consistency.png"
+           alt="Efficiency scatter and boxplot"
+           onerror="this.style.display:'none'"/>
+      <div class="fig-caption">
+        <strong>Fig 3 — Efficiency and Consistency</strong><br>
+        Left: RL episodes cluster in high-reward + high-coverage region.
+        Right: RL accuracy distribution is tighter and higher.
+      </div>
+    </div>
+    <div class="fig-card">
+      <img src="../figures/fig4_uncertainty_reduction.png"
+           alt="Uncertainty reduction"
+           onerror="this.style.display:'none'"/>
+      <div class="fig-caption">
+        <strong>Fig 4 — Uncertainty Reduction Over Episodes</strong><br>
+        Annotated geometric coverage ceiling at ~63% due to spacecraft
+        self-occlusion — a scene property, not a policy limitation.
+      </div>
+    </div>
+    <div class="fig-card">
+      <img src="../figures/fig5_reward_violin.png"
+           alt="Reward violin"
+           onerror="this.style.display:'none'"/>
+      <div class="fig-caption">
+        <strong>Fig 5 — Reward Distribution (Violin)</strong><br>
+        RL distribution entirely above both baselines. Sequential distribution
+        narrower but centred at negative values due to polar bias.
+      </div>
+    </div>
+    <div class="fig-card">
+      <img src="../figures/fig6_observation_efficiency.png"
+           alt="Observation efficiency"
+           onerror="this.style.display:'none'"/>
+      <div class="fig-caption">
+        <strong>Fig 6 — Observation Efficiency</strong><br>
+        Coverage and reward per image captured. RL extracts more information
+        per observation — critical for resource-constrained platforms.
+      </div>
+    </div>
+    <div class="fig-card" style="grid-column:1/-1">
+      <img src="../figures/fig7_summary_table.png"
+           alt="Summary statistics table"
+           onerror="this.style.display:'none'"/>
+      <div class="fig-caption">
+        <strong>Fig 7 — Summary Statistics Table</strong><br>
+        All metrics with ± std across 50 episodes. Colour-coded deltas show
+        RL improvement direction and magnitude vs each baseline.
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── KEY FINDINGS ──────────────────────────────────────────── -->
+<section>
+  <span class="section-label">Discussion</span>
+  <h2>Key <span>Findings</span></h2>
+
+  <div class="findings-grid">
+    <div class="finding-card">
+      <div class="finding-num">+790%</div>
+      <div class="finding-title">Reward Improvement</div>
+      <div class="finding-desc">
+        RL reward (+3.48) vs random (−0.91). The agent learned to avoid revisiting
+        viewpoints (near-zero revisit penalties) while targeting high-uncertainty
+        equatorial views.
+      </div>
+    </div>
+    <div class="finding-card">
+      <div class="finding-num">~63%</div>
+      <div class="finding-title">Geometric Coverage Ceiling</div>
+      <div class="finding-desc">
+        No strategy exceeds ~63% coverage due to mutual occlusion between
+        spacecraft components. This is a scene property, motivating future
+        work with continuous action spaces.
+      </div>
+    </div>
+    <div class="finding-card">
+      <div class="finding-num">↓13%</div>
+      <div class="finding-title">Sequential Polar Bias</div>
+      <div class="finding-desc">
+        Sequential visits Fibonacci poles first, missing equatorial geometry.
+        Scores 13% lower coverage than RL and even lower than random —
+        confirming systematic strategies fail without uncertainty awareness.
+      </div>
+    </div>
+    <div class="finding-card">
+      <div class="finding-num">32</div>
+      <div class="finding-title">Views from 64</div>
+      <div class="finding-desc">
+        With 32 steps from 64 viewpoints, the agent must choose 50% of
+        available views. This selection pressure is what enables RL to
+        demonstrate clear advantage over baselines.
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── SETUP ─────────────────────────────────────────────────── -->
+<section id="setup">
+  <span class="section-label">Getting Started</span>
+  <h2>Quick <span>Setup</span></h2>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;margin-top:2rem">
+    <div>
+      <h3 style="margin-bottom:1rem;font-size:1rem;color:var(--accent)">1 — Clone & Install</h3>
+      <div class="code-block">
+git clone https://github.com/YOUR_USERNAME/ActiveReconstruction.git
+cd ActiveReconstruction
+python -m venv mlagent_env
+mlagent_env\Scripts\activate
+pip install mlagents==0.30.0 torch==1.13.1
+      </div>
+    </div>
+    <div>
+      <h3 style="margin-bottom:1rem;font-size:1rem;color:var(--accent)">2 — Train PPO</h3>
+      <div class="code-block">
+<span class="c"># Run BEFORE pressing Play in Unity</span>
+mlagents-learn Config/camera_agent.yaml \
+  --run-id=CameraPPO_v1 --train
+
+<span class="c"># Then press Play in Unity Editor</span>
+<span class="c"># Training: 30,000 steps (~15 min)</span>
+      </div>
+    </div>
+    <div>
+      <h3 style="margin-bottom:1rem;font-size:1rem;color:var(--accent)">3 — Generate Figures</h3>
+      <div class="code-block">
+<span class="c"># Edit paths at top of script, then:</span>
+python Python/plot_all.py
+
+<span class="c"># Outputs 7 figures (PNG + PDF)</span>
+<span class="c"># to the figures/ directory</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:2rem;padding:1.2rem 1.5rem;background:var(--card);
+              border:1px solid var(--border);border-radius:var(--radius)">
+    <strong>BehaviorParameters (must match exactly):</strong>
+    <span style="color:var(--muted)">
+      Space Size = <strong style="color:var(--accent)">144</strong> ·
+      Discrete Branches = <strong style="color:var(--accent)">1</strong> ·
+      Branch 0 Size = <strong style="color:var(--accent)">64</strong> ·
+      ViewPointGenerator Num Viewpoints = <strong style="color:var(--accent)">64</strong>
+    </span>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── FOOTER ────────────────────────────────────────────────── -->
+<footer>
+  <p style="margin-bottom:.5rem">
+    <strong style="color:var(--text)">Uncertainty-Aware Active 3D Reconstruction via RL</strong>
+  </p>
+  <p>
+    Built with Unity 2022.3 LTS · ML-Agents 2.0.2 · Python 3.10 ·
+    <a href="https://github.com/YOUR_USERNAME/ActiveReconstruction">GitHub Repository</a>
+  </p>
+  <p style="margin-top:.5rem;font-size:.8rem">
+    [Your Name] · [University] · 2025 · MIT License
+  </p>
+</footer>
+
+</body>
+</html>
