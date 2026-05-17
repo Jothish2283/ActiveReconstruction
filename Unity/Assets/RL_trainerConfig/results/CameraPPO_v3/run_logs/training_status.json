@@ -1,0 +1,65 @@
+{
+    "CameraAgent": {
+        "checkpoints": [
+            {
+                "steps": 13984,
+                "file_path": "results\\CameraPPO_v3\\CameraAgent\\CameraAgent-13984.onnx",
+                "reward": 4.1445224589489875,
+                "creation_time": 1778957391.3425007,
+                "auxillary_file_paths": [
+                    "results\\CameraPPO_v3\\CameraAgent\\CameraAgent-13984.pt"
+                ]
+            },
+            {
+                "steps": 15968,
+                "file_path": "results\\CameraPPO_v3\\CameraAgent\\CameraAgent-15968.onnx",
+                "reward": 4.207611056891355,
+                "creation_time": 1778957437.0768356,
+                "auxillary_file_paths": [
+                    "results\\CameraPPO_v3\\CameraAgent\\CameraAgent-15968.pt"
+                ]
+            },
+            {
+                "steps": 17984,
+                "file_path": "results\\CameraPPO_v3\\CameraAgent\\CameraAgent-17984.onnx",
+                "reward": 4.177630492619106,
+                "creation_time": 1778957484.7199845,
+                "auxillary_file_paths": [
+                    "results\\CameraPPO_v3\\CameraAgent\\CameraAgent-17984.pt"
+                ]
+            },
+            {
+                "steps": 19968,
+                "file_path": "results\\CameraPPO_v3\\CameraAgent\\CameraAgent-19968.onnx",
+                "reward": 4.117464634088369,
+                "creation_time": 1778957530.945356,
+                "auxillary_file_paths": [
+                    "results\\CameraPPO_v3\\CameraAgent\\CameraAgent-19968.pt"
+                ]
+            },
+            {
+                "steps": 20032,
+                "file_path": "results\\CameraPPO_v3\\CameraAgent\\CameraAgent-20032.onnx",
+                "reward": 4.124308243030455,
+                "creation_time": 1778957531.7557042,
+                "auxillary_file_paths": [
+                    "results\\CameraPPO_v3\\CameraAgent\\CameraAgent-20032.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 20032,
+            "file_path": "results\\CameraPPO_v3\\CameraAgent.onnx",
+            "reward": 4.124308243030455,
+            "creation_time": 1778957531.7557042,
+            "auxillary_file_paths": [
+                "results\\CameraPPO_v3\\CameraAgent\\CameraAgent-20032.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.1.2+cpu"
+    }
+}
